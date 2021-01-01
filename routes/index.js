@@ -26,7 +26,7 @@ router.get('/search', function (req, res) {
     pool.query(`Select * from furnitures where name like '%${req.query.name}%' or price like '%${req.query.name}%' `,function (error, result) {
         if (error) {
             console.log(error)
-            res.send('Server error')
+            res.send('Server error come back soon')
         } else {
             res.send(result);
         }
