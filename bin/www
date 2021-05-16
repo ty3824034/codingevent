@@ -31,8 +31,8 @@ const customGenerationFunction = () =>
 
 const peerServer = ExpressPeerServer(server, {
   debug: true,
-  path: "/",
-  generateClientId: customGenerationFunction,
+  // path: "/",
+  // generateClientId: customGenerationFunction,
 });
 
 app.use("/mypeer", peerServer);
