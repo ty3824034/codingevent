@@ -12,14 +12,69 @@ var http = require('http');
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '3000');
+var port = normalizePort(process.env.PORT || '4000');
 app.set('port', port);
 
 /**
  * Create HTTP server.
  */
 
+const users = {};
+const usersArray = [];
+
 var server = http.createServer(app);
+const io = require("socket.io")(server)
+const { ExpressPeerServer } = require('peer')
+
+const customGenerationFunction = () =>
+  (Math.random().toString(36) + "0000000000000000000").substr(2, 16);
+
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
+  path: "/",
+  generateClientId: customGenerationFunction,
+});
+
+app.use("/mypeer", peerServer);
+
+
+
+io.on('connection', socket => {
+
+  console.log("New user connected", socket.id)
+
+  socket.on('join-room', ({ userId, roomID }) => {
+    socket.join(roomID)
+    socket.to(roomID).broadcast.emit('user-connected', userId)
+  })
+
+
+  socket.on('new-user-joined', name => {
+    socket.emit('alreadyJoined', usersArray);
+    users[socket.id] = name;
+    usersArray.push({ name: name, id: socket.id });
+    socket.broadcast.emit('user-joined', { name: name, id: socket.id });
+
+  })
+  socket.on('send', message => {
+    console.log(message)
+    // socket.broadcast.emit('receive', { message: message, name: users[socket.id] })
+    io.emit('receive', { message: message, name: users[socket.id] })
+  })
+  socket.on('disconnect', () => {
+
+    socket.broadcast.emit('disconnected', { name: users[socket.id], id: socket.id });
+    for (i = 0; i < usersArray.length; i++) {
+      if (usersArray[i].id === socket.id) {
+        usersArray.splice(i, 1);
+      }
+    }
+    delete users[socket.id]
+    console.log("disconnected")
+  })
+
+
+})
 
 /**
  * Listen on provided port, on all network interfaces.
